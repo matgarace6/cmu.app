@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
+import { ensureDatabaseSchema } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +52,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureDatabaseSchema();
+
   const hoy = new Date();
   const esAgosto1 = hoy.getMonth() === 7 && hoy.getDate() === 1; // Agosto es el mes 7 (empezando de 0)
 
