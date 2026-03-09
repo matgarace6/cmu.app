@@ -24,8 +24,9 @@ export default function Gym() {
   const { user } = useAuth();
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+  const [mobileDayIndex, setMobileDayIndex] = useState(0);
 
-  const { data: bookings = [] } = useQuery<GymBookingWithRoom[]>({ queryKey: ["/api/gym"] });
+  const { data: bookings = [], isLoading, isError } = useQuery<GymBookingWithRoom[]>({ queryKey: ["/api/gym"] });
 
   const bookMutation = useMutation({
     mutationFn: async (vars: any) => {
@@ -35,8 +36,8 @@ export default function Gym() {
       queryClient.invalidateQueries({ queryKey: ["/api/gym"] });
       toast({ title: "Reserva confirmada" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "No se pudo realizar la reserva.", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "No se pudo realizar la reserva", description: error.message, variant: "destructive" });
     }
   });
 
@@ -78,7 +79,75 @@ export default function Gym() {
         </div>
       </div>
 
-      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white">
+
+      <div className="md:hidden mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {weekDays.map((day, idx) => (
+            <Button
+              key={day.toString()}
+              variant={mobileDayIndex === idx ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMobileDayIndex(idx)}
+              className="whitespace-nowrap"
+            >
+              {format(day, "EEE d", { locale: es })}
+            </Button>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          {TIMES.map((time) => {
+            const day = weekDays[mobileDayIndex];
+            const dateStr = format(day, "yyyy-MM-dd");
+            const slotBookings = bookings.filter((b) => b.date === dateStr && b.timeSlot === time);
+            const isBookedByMe = slotBookings.some((b) => b.userId === user?.id);
+            const isFull = slotBookings.length >= 3;
+            const today = startOfDay(new Date());
+            const isPastDay = isBefore(day, today);
+
+            return (
+              <div key={time} className="border rounded-lg p-2 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-sm">{time}</p>
+                  {isBookedByMe ? (
+                    <Button size="sm" variant="ghost" className="h-9 text-red-600" onClick={() => cancelMutation.mutate({ date: dateStr, timeSlot: time })}>
+                      <X className="h-4 w-4 mr-1" /> Cancelar
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="h-9" disabled={isFull || isPastDay} onClick={() => bookMutation.mutate({ date: dateStr, timeSlot: time })}>
+                      <UserPlus className="h-4 w-4 mr-1" /> {isFull ? "Lleno" : "Apuntarse"}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-1">{slotBookings.length}/3 plazas ocupadas</p>
+                <div className="flex flex-wrap gap-1">
+                  {slotBookings.map((booking) => (
+                    <span key={booking.id} className="text-xs px-2 py-1 rounded bg-slate-100">
+                      {booking.roomNumber || "N/A"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="hidden md:block overflow-x-auto border rounded-xl shadow-sm bg-white">        <div className="flex flex-wrap items-center gap-3 px-3 py-2 border-b bg-slate-50 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400" />Libre</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400" />Quedan plazas</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Completo</span>
+        </div>
+        {isLoading && (
+          <div className="px-4 py-3 text-sm font-semibold text-slate-500 border-b bg-slate-50">
+            Cargando disponibilidad del gimnasio...
+          </div>
+        )}
+        {isError && (
+          <div className="px-4 py-3 text-sm font-semibold text-red-600 border-b bg-red-50">
+            No se pudo cargar el horario del gimnasio. Vuelve a intentarlo en unos segundos.
+          </div>
+        )}
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b">

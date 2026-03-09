@@ -71,10 +71,10 @@ export function AppSidebar() {
         <div className="bg-card border border-border/50 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-              {user?.username.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-semibold truncate">{user?.username}</span>
+              <span className="text-sm font-semibold truncate">{user?.name ?? user?.roomNumber}</span>
               <span className="text-xs text-muted-foreground">Residente</span>
             </div>
           </div>

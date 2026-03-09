@@ -1,11 +1,11 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import express, { Express } from "express";
+import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { insertUserSchema, type User as SelectUser } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
 
@@ -23,9 +23,14 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    throw new Error("SESSION_SECRET must be set");
+  }
+
   // Configuración de sesión optimizada para Replit y Postgres
   const sessionSettings: session.SessionOptions = {
-    secret: "dorm-app-secret-santa-cruz", // Una clave única para la residencia
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,

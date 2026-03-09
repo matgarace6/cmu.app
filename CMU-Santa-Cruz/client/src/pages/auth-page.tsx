@@ -18,7 +18,7 @@ export default function AuthPage() {
 
   const registerForm = useForm({
     resolver: zodResolver(insertUserSchema),
-    defaultValues: { roomNumber: "", password: "", allergies: "" }
+    defaultValues: { roomNumber: "", name: "", password: "", allergies: "" }
   });
 
   if (user) {
@@ -53,7 +53,8 @@ export default function AuthPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Habitación</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
+                          <FormControl><Input {...field} placeholder="Ej: 204" /></FormControl>
+                          <p className="text-xs text-slate-500">Introduce tu número de habitación sin letras.</p>
                         </FormItem>
                       )}
                     />
@@ -68,7 +69,7 @@ export default function AuthPage() {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                      Entrar
+                      {loginMutation.isPending ? "Entrando..." : "Entrar"}
                     </Button>
                   </form>
                 </Form>
@@ -90,11 +91,23 @@ export default function AuthPage() {
                     />
                     <FormField
                       control={registerForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre</FormLabel>
+                          <FormControl><Input {...field} placeholder="Tu nombre" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Crea tu contraseña</FormLabel>
                           <FormControl><Input type="password" {...field} /></FormControl>
+                          <p className="text-xs text-slate-500">Usa al menos 4 caracteres para poder continuar.</p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -111,17 +124,22 @@ export default function AuthPage() {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      Crear Perfil
+                      {registerMutation.isPending ? "Creando perfil..." : "Crear Perfil"}
                     </Button>
                   </form>
                 </Form>
               </TabsContent>
             </Tabs>
 
-            <div className="mt-8 pt-6 border-t border-slate-100">
+            <div className="mt-8 pt-6 border-t border-slate-100 space-y-2">
               <Link href="/kitchen">
                 <Button variant="outline" className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 font-bold">
                   Acceso Personal de Cocina
+                </Button>
+              </Link>
+              <Link href="/admin">
+                <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 font-bold">
+                  Panel administrativo
                 </Button>
               </Link>
             </div>
