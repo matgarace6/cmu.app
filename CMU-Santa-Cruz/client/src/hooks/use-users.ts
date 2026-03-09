@@ -9,7 +9,7 @@ export function useLogin() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: InsertUser) => {
+    mutationFn: async (data: Pick<InsertUser, "roomNumber" | "password">) => {
       const res = await fetch(api.users.login.path, {
         method: api.users.login.method,
         headers: { "Content-Type": "application/json" },
@@ -26,14 +26,14 @@ export function useLogin() {
     onSuccess: (user) => {
       setUser(user);
       toast({
-        title: "Welcome back",
-        description: `Logged in as ${user.username}`,
+        title: "Bienvenido",
+        description: `Sesión iniciada: habitación ${user.roomNumber}`,
       });
     },
     onError: () => {
       toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
+        title: "Error de acceso",
+        description: "Revisa la habitación y la contraseña.",
         variant: "destructive",
       });
     }

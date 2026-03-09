@@ -12,6 +12,7 @@ import Laundry from "@/pages/Laundry";
 import Gym from "@/pages/Gym";
 import Dining from "@/pages/Dining";
 import KitchenView from "@/pages/KitchenView";
+import AdminPanel from "@/pages/AdminPanel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <ProtectedRoute path="/gym" component={Gym} />
       <ProtectedRoute path="/dining" component={Dining} />
       <Route path="/kitchen" component={KitchenView} />
+      <ProtectedRoute path="/admin" component={AdminPanel} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

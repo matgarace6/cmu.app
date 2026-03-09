@@ -43,7 +43,7 @@ export default function Dining() {
     end: endOfWeek(monthEnd, { weekStartsOn: 1 }),
   });
 
-  const { data: optOuts = [] } = useQuery<DiningOptOut[]>({ 
+  const { data: optOuts = [], isLoading, isError } = useQuery<DiningOptOut[]>({ 
     queryKey: ["/api/dining"] 
   });
 
@@ -99,6 +99,21 @@ export default function Dining() {
           <div className="h-2 w-2 rounded-full bg-red-500"></div> No asistiré
         </div>
       </div>
+
+      <div className="mb-4 px-2 text-xs text-slate-500 font-semibold">
+        Pulsa un botón solo si <span className="text-red-600">NO vas a asistir</span> a esa comida.
+      </div>
+
+      {isLoading && (
+        <div className="mb-3 px-4 py-3 text-sm font-semibold text-slate-500 border rounded-lg bg-slate-50">
+          Cargando estado del comedor...
+        </div>
+      )}
+      {isError && (
+        <div className="mb-3 px-4 py-3 text-sm font-semibold text-red-600 border rounded-lg bg-red-50">
+          No pudimos cargar el calendario del comedor. Recarga la página para reintentar.
+        </div>
+      )}
 
       {/* CALENDARIO MENSUAL TIPO GRID */}
       <div className="grid grid-cols-7 gap-px bg-slate-200 border rounded-2xl overflow-hidden shadow-2xl">

@@ -1,16 +1,39 @@
 import { useQuery } from "@tanstack/react-query";
 import { User, DiningOptOut } from "@shared/schema";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const normalizeAllergyValue = (value: string) => value.trim().toLowerCase();
+
+const isNoAllergyValue = (value: string) => {
+  const normalized = normalizeAllergyValue(value);
+  return normalized === "no" || normalized === "ninguna";
+};
 
 export default function KitchenView() {
   const [filterDate, setFilterDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const { data, isLoading } = useQuery<{ users: User[], optOuts: DiningOptOut[] }>({
+  const { data, isLoading } = useQuery<{ users: User[]; optOuts: DiningOptOut[] }>({
     queryKey: ["/api/kitchen/report"],
   });
+
+  const sortedUsers = useMemo(() => {
+    if (!data?.users) return [];
+    return [...data.users].sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, "es", { sensitivity: "base" }));
+  }, [data?.users]);
+
+  const totalUsers = sortedUsers.length;
+  const lunchOutCount = data?.optOuts.filter(
+    (o) => o.date === filterDate && o.mealType === "Lunch",
+  ).length ?? 0;
+  const dinnerOutCount = data?.optOuts.filter(
+    (o) => o.date === filterDate && o.mealType === "Dinner",
+  ).length ?? 0;
+
+  const lunchInCount = totalUsers - lunchOutCount;
+  const dinnerInCount = totalUsers - dinnerOutCount;
 
   if (isLoading) return <div className="p-10 text-center font-bold">Cargando reporte de cocina...</div>;
 
@@ -30,12 +53,23 @@ export default function KitchenView() {
             </h2>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500">Fecha:</span>
-              <Input 
-                type="date" 
-                className="w-44" 
-                value={filterDate} 
-                onChange={(e) => setFilterDate(e.target.value)} 
+              <Input
+                type="date"
+                className="w-44"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            <div className="rounded-lg border bg-white p-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Comen</p>
+              <p className="text-xl font-black text-emerald-600">{lunchInCount}/{totalUsers}</p>
+            </div>
+            <div className="rounded-lg border bg-white p-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Cenan</p>
+              <p className="text-xl font-black text-blue-600">{dinnerInCount}/{totalUsers}</p>
             </div>
           </div>
 
@@ -50,23 +84,42 @@ export default function KitchenView() {
                 </tr>
               </thead>
               <tbody>
-                {data?.users.map(u => {
-                  const isLunchOut = data.optOuts.some(o => o.userId === u.id && o.date === filterDate && o.mealType === "Lunch");
-                  const isDinnerOut = data.optOuts.some(o => o.userId === u.id && o.date === filterDate && o.mealType === "Dinner");
+                {sortedUsers.map((u) => {
+                  const isLunchOut = data?.optOuts.some(
+                    (o) => o.userId === u.id && o.date === filterDate && o.mealType === "Lunch",
+                  );
+                  const isDinnerOut = data?.optOuts.some(
+                    (o) => o.userId === u.id && o.date === filterDate && o.mealType === "Dinner",
+                  );
+                  const noAllergies = isNoAllergyValue(u.allergies);
 
                   return (
                     <tr key={u.id} className="border-b hover:bg-slate-50">
                       <td className="p-3 font-bold text-slate-800">{u.roomNumber}</td>
                       <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${u.allergies.toLowerCase() === 'ninguna' || u.allergies.toLowerCase() === 'ninguna ' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 uppercase'}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-[10px] font-bold ${
+                            noAllergies
+                              ? "bg-slate-100 text-slate-500"
+                              : "bg-red-100 text-red-700 uppercase"
+                          }`}
+                        >
                           {u.allergies}
                         </span>
                       </td>
                       <td className="p-3">
-                        {isLunchOut ? <span className="text-red-600 font-bold text-xs uppercase">NO VIENE</span> : <span className="text-slate-400 text-xs">Asiste</span>}
+                        {isLunchOut ? (
+                          <span className="text-red-600 font-bold text-xs uppercase">NO VIENE</span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">Asiste</span>
+                        )}
                       </td>
                       <td className="p-3">
-                        {isDinnerOut ? <span className="text-red-600 font-bold text-xs uppercase">NO VIENE</span> : <span className="text-slate-400 text-xs">Asiste</span>}
+                        {isDinnerOut ? (
+                          <span className="text-red-600 font-bold text-xs uppercase">NO VIENE</span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">Asiste</span>
+                        )}
                       </td>
                     </tr>
                   );

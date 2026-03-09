@@ -28,8 +28,9 @@ export default function Laundry() {
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
   const [machineType, setMachineType] = useState<"Lavadora" | "Secadora">("Lavadora");
   const [machineId, setMachineId] = useState("1");
+  const [mobileDayIndex, setMobileDayIndex] = useState(0);
 
-  const { data: bookings = [] } = useQuery<LaundryBooking[]>({ queryKey: ["/api/laundry"] });
+  const { data: bookings = [], isLoading, isError } = useQuery<LaundryBooking[]>({ queryKey: ["/api/laundry"] });
 
   const bookMutation = useMutation({
     mutationFn: async (vars: any) => { await apiRequest("POST", "/api/laundry", vars); },
@@ -37,7 +38,14 @@ export default function Laundry() {
       queryClient.invalidateQueries({ queryKey: ["/api/laundry"] });
       toast({ title: "Reserva confirmada" });
       setIsDialogOpen(false);
-    }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "No se pudo reservar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const cancelMutation = useMutation({
@@ -76,7 +84,75 @@ export default function Laundry() {
         </div>
       </div>
 
-      <div className="overflow-x-auto border rounded-2xl shadow-xl bg-white">
+
+      <div className="md:hidden mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {weekDays.map((day, idx) => (
+            <Button
+              key={day.toString()}
+              variant={mobileDayIndex === idx ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMobileDayIndex(idx)}
+              className="whitespace-nowrap"
+            >
+              {format(day, "EEE d", { locale: es })}
+            </Button>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          {TIMES.map((time) => {
+            const day = weekDays[mobileDayIndex];
+            const dateStr = format(day, "yyyy-MM-dd");
+            const slotBookings = bookings.filter((b) => b.timeSlot === time && b.date === dateStr);
+            const today = startOfDay(new Date());
+            const isPastDay = isBefore(day, today);
+
+            return (
+              <div key={time} className="border rounded-lg p-2 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-sm">{time}</p>
+                  <Button size="sm" className="h-9" onClick={() => handleOpenDialog(day, time)} disabled={isPastDay}>
+                    <Plus className="h-4 w-4 mr-1" /> Reservar
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  {slotBookings.length === 0 ? (
+                    <p className="text-xs text-slate-400">Sin reservas</p>
+                  ) : (
+                    slotBookings.map((b) => (
+                      <div key={b.id} className="flex items-center justify-between text-xs p-2 rounded bg-slate-50">
+                        <span>{b.machineType} {b.machineId}</span>
+                        {b.userId === user?.id && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-red-600"
+                            onClick={() => cancelMutation.mutate({ date: dateStr, timeSlot: time, machineType: b.machineType, machineId: b.machineId })}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="hidden md:block overflow-x-auto border rounded-2xl shadow-xl bg-white">        {isLoading && (
+          <div className="px-4 py-3 text-sm font-semibold text-slate-500 border-b bg-slate-50">
+            Cargando reservas de lavandería...
+          </div>
+        )}
+        {isError && (
+          <div className="px-4 py-3 text-sm font-semibold text-red-600 border-b bg-red-50">
+            No pudimos cargar las reservas. Recarga la página para intentarlo de nuevo.
+          </div>
+        )}
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-slate-800 text-white font-bold">

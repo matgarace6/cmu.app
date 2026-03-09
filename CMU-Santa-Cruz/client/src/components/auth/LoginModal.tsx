@@ -7,14 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Building2 } from "lucide-react";
 
 export function LoginModal({ isOpen }: { isOpen: boolean }) {
-  const [username, setUsername] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
   const [password, setPassword] = useState("");
   const login = useLogin();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return;
-    login.mutate({ username, password });
+    if (!roomNumber || !password) return;
+    login.mutate({ roomNumber, password });
   };
 
   return (
@@ -32,12 +32,12 @@ export function LoginModal({ isOpen }: { isOpen: boolean }) {
         
         <form onSubmit={handleSubmit} className="p-8 space-y-6 bg-white">
           <div className="space-y-2">
-            <Label htmlFor="username">ID de Estudiante / Usuario</Label>
+            <Label htmlFor="roomNumber">Habitación</Label>
             <Input 
-              id="username" 
-              placeholder="ej. jdoe" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="roomNumber" 
+              placeholder="ej. 204" 
+              value={roomNumber}
+              onChange={(e) => setRoomNumber(e.target.value)}
               className="h-12 bg-gray-50/50"
             />
           </div>
