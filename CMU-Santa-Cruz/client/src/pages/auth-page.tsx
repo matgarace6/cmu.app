@@ -9,8 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect, Link } from "wouter";
 
-const ADMIN_ROOM = "422";
-
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
 
@@ -24,7 +22,7 @@ export default function AuthPage() {
   });
 
   if (user) {
-    return <Redirect to={user.roomNumber === ADMIN_ROOM ? "/admin" : "/"} />;
+    return <Redirect to={user.isAdmin ? "/admin" : "/"} />;
   }
 
   return (

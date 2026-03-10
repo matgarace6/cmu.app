@@ -33,7 +33,7 @@ export type GymBookingWithRoom = GymBooking & {
 export interface IStorage {
   sessionStore: session.Store;
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(roomNumber: string): Promise<User | undefined>;
+  getUserByRoomNumber(roomNumber: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserProfile(userId: number, input: { name: string; allergies: string }): Promise<User | undefined>;
@@ -106,7 +106,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserByUsername(roomNumber: string): Promise<User | undefined> {
+  async getUserByRoomNumber(roomNumber: string): Promise<User | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.roomNumber, roomNumber));
       return user;
