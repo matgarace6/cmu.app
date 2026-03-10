@@ -19,6 +19,13 @@ interface GymBookingWithRoom {
   roomNumber?: string;
 }
 
+const getSlotColorClass = (bookingsCount: number, isBookedByMe: boolean) => {
+  if (isBookedByMe) return "bg-blue-50 border-blue-200";
+  if (bookingsCount >= 3) return "bg-red-50 border-red-200";
+  if (bookingsCount >= 1) return "bg-yellow-50 border-yellow-200";
+  return "bg-green-50 border-green-200";
+};
+
 export default function Gym() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -104,9 +111,10 @@ export default function Gym() {
             const isFull = slotBookings.length >= 3;
             const today = startOfDay(new Date());
             const isPastDay = isBefore(day, today);
+            const slotColorClass = getSlotColorClass(slotBookings.length, isBookedByMe);
 
             return (
-              <div key={time} className="border rounded-lg p-2 bg-white">
+              <div key={time} className={`border rounded-lg p-2 ${slotColorClass}`}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-bold text-sm">{time}</p>
                   {isBookedByMe ? (
@@ -122,7 +130,14 @@ export default function Gym() {
                 <p className="text-xs text-slate-500 mb-1">{slotBookings.length}/3 plazas ocupadas</p>
                 <div className="flex flex-wrap gap-1">
                   {slotBookings.map((booking) => (
-                    <span key={booking.id} className="text-xs px-2 py-1 rounded bg-slate-100">
+                    <span
+                      key={booking.id}
+                      className={`text-xs px-2 py-1 rounded border ${
+                        booking.userId === user?.id
+                          ? "bg-blue-100 text-blue-700 border-blue-200"
+                          : "bg-white/80 text-slate-700 border-slate-200"
+                      }`}
+                    >
                       {booking.roomNumber || "N/A"}
                     </span>
                   ))}
@@ -135,8 +150,9 @@ export default function Gym() {
 
       <div className="hidden md:block overflow-x-auto border rounded-xl shadow-sm bg-white">        <div className="flex flex-wrap items-center gap-3 px-3 py-2 border-b bg-slate-50 text-[10px] font-bold uppercase tracking-widest text-slate-500">
           <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-400" />Libre</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400" />Quedan plazas</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400" />1-2 plazas ocupadas</span>
           <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />Completo</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400" />Tu reserva</span>
         </div>
         {isLoading && (
           <div className="px-4 py-3 text-sm font-semibold text-slate-500 border-b bg-slate-50">
@@ -175,14 +191,7 @@ export default function Gym() {
                   const isPastDay = isBefore(day, today);
                   
                   // Determinar color de fondo según estado del slot
-                  let bgColor = "bg-green-50"; // Vacío
-                  if (isBookedByMe) {
-                    bgColor = "bg-blue-50"; // Reservado por el usuario
-                  } else if (isFull) {
-                    bgColor = "bg-red-50"; // Lleno
-                  } else if (slotBookings.length > 0) {
-                    bgColor = "bg-orange-50"; // Parcialmente ocupado
-                  }
+                  const bgColor = getSlotColorClass(slotBookings.length, isBookedByMe);
 
                   return (
                     <td key={day.toString()} className={`p-1 md:p-2 border-r h-16 md:h-20 text-center relative group ${bgColor}`}>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LaundryBooking, GymBooking } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
 import { addDays, format, isAfter, isSameDay, parseISO } from "date-fns";
 import {
   LogOut,
@@ -26,6 +26,10 @@ export default function HomePage() {
   const todayStr = format(today, "yyyy-MM-dd");
   const nextWeekLimit = addDays(today, 7);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+
+  if (user?.roomNumber === "422") {
+    return <Redirect to="/admin" />;
+  }
 
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {

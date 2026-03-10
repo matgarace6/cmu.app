@@ -270,7 +270,7 @@ export async function registerRoutes(server: Server, app: Express): Promise<Serv
 
   app.get("/api/kitchen/report", async (_req, res) => {
     try {
-      const users = await storage.getUsers();
+      const users = (await storage.getUsers()).filter((u) => !isAdminRoom(u.roomNumber));
       const optOuts = await storage.getDiningOptOuts();
       res.json({ users, optOuts });
     } catch (_e) {
