@@ -21,7 +21,9 @@ export default function KitchenView() {
 
   const sortedUsers = useMemo(() => {
     if (!data?.users) return [];
-    return [...data.users].sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, "es", { sensitivity: "base" }));
+    return data.users
+      .filter((u) => u.roomNumber !== "422")
+      .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, "es", { sensitivity: "base" }));
   }, [data?.users]);
 
   const totalUsers = sortedUsers.length;

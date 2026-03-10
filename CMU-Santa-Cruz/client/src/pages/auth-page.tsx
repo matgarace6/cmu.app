@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect, Link } from "wouter";
 
+const ADMIN_ROOM = "422";
+
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
 
@@ -22,7 +24,7 @@ export default function AuthPage() {
   });
 
   if (user) {
-    return <Redirect to="/" />;
+    return <Redirect to={user.roomNumber === ADMIN_ROOM ? "/admin" : "/"} />;
   }
 
   return (
@@ -135,11 +137,6 @@ export default function AuthPage() {
               <Link href="/kitchen">
                 <Button variant="outline" className="w-full border-orange-200 text-orange-600 hover:bg-orange-50 font-bold">
                   Acceso Personal de Cocina
-                </Button>
-              </Link>
-              <Link href="/admin">
-                <Button variant="outline" className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 font-bold">
-                  Panel administrativo
                 </Button>
               </Link>
             </div>
