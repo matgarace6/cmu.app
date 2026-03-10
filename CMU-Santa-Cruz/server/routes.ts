@@ -2,6 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
+import { isAdminRoom } from "./admin";
+import { z } from "zod";
 
 function parseSlotHour(timeSlot: string): number {
   const [hour] = timeSlot.split(":");
@@ -29,14 +31,30 @@ function isUniqueViolation(error: unknown): boolean {
   return code === "23505";
 }
 
-function isAdminRoom(roomNumber?: string): boolean {
-  if (!roomNumber) return false;
-  const adminRooms = (process.env.ADMIN_ROOMS || "422")
-    .split(",")
-    .map((r) => r.trim())
-    .filter(Boolean);
-  return adminRooms.includes(roomNumber);
-}
+const blockMachineSchema = z.object({
+  date: z.string().min(1),
+  timeSlot: z.string().min(1),
+  machineType: z.string().min(1),
+  machineId: z.coerce.number().int().positive(),
+  blocked: z.boolean(),
+});
+
+const blockSlotSchema = z.object({
+  service: z.enum(["laundry", "gym"]),
+  date: z.string().min(1),
+  timeSlot: z.string().min(1),
+  blocked: z.boolean(),
+});
+
+const adminUpdateUserSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+  name: z.string().trim().min(1, "El nombre no puede estar vacío"),
+  allergies: z.string().trim().min(1, "Las alergias no pueden estar vacías"),
+});
+
+const adminDeleteUserSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+});
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -318,8 +336,10 @@ export async function registerRoutes(server: Server, app: Express): Promise<Serv
     const adminUser = req.user;
     if (!adminUser) return res.sendStatus(401);
 
-    const { date, timeSlot, machineType, machineId, blocked } = req.body;
-    const mId = Number(machineId);
+    const parsed = blockMachineSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).send("Datos inválidos");
+
+    const { date, timeSlot, machineType, machineId: mId, blocked } = parsed.data;
 
     if (blocked) {
       await storage.blockLaundryMachine({
@@ -350,14 +370,14 @@ export async function registerRoutes(server: Server, app: Express): Promise<Serv
     const adminUser = req.user;
     if (!adminUser) return res.sendStatus(401);
 
-    const { userId, name, allergies } = req.body as { userId: number; name: string; allergies: string };
+    const parsed = adminUpdateUserSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).send(parsed.error.issues[0]?.message || "Datos inválidos");
 
-    if (!name?.trim()) return res.status(400).send("El nombre no puede estar vacío");
-    if (!allergies?.trim()) return res.status(400).send("Las alergias no pueden estar vacías");
+    const { userId, name, allergies } = parsed.data;
 
-    const updated = await storage.updateUserProfile(Number(userId), {
-      name: name.trim(),
-      allergies: allergies.trim(),
+    const updated = await storage.updateUserProfile(userId, {
+      name,
+      allergies,
     });
 
     if (!updated) return res.status(404).send("Usuario no encontrado");
@@ -376,10 +396,10 @@ export async function registerRoutes(server: Server, app: Express): Promise<Serv
     const adminUser = req.user;
     if (!adminUser) return res.sendStatus(401);
 
-    const { userId } = req.body as { userId: number };
-    const targetUserId = Number(userId);
+    const parsed = adminDeleteUserSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).send("Usuario inválido");
 
-    if (Number.isNaN(targetUserId)) return res.status(400).send("Usuario inválido");
+    const { userId: targetUserId } = parsed.data;
     if (targetUserId === adminUser.id) {
       return res.status(400).send("No puedes borrar tu propio perfil desde el panel de administración.");
     }
@@ -404,12 +424,10 @@ export async function registerRoutes(server: Server, app: Express): Promise<Serv
     const adminUser = req.user;
     if (!adminUser) return res.sendStatus(401);
 
-    const { service, date, timeSlot, blocked } = req.body as {
-      service: "laundry" | "gym";
-      date: string;
-      timeSlot: string;
-      blocked: boolean;
-    };
+    const parsed = blockSlotSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).send("Datos inválidos");
+
+    const { service, date, timeSlot, blocked } = parsed.data;
 
     if (blocked) {
       await storage.blockTimeSlot({ service, date, timeSlot, blockedByUserId: adminUser.id });

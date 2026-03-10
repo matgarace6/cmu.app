@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { format } from "date-fns";
-import { Home } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,7 @@ interface AdminDashboard {
 
 export default function AdminPanel() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [timeSlot, setTimeSlot] = useState("18:00");
   const [machineType, setMachineType] = useState("Lavadora");
@@ -115,9 +114,16 @@ export default function AdminPanel() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-black">Panel administrativo</h1>
-          <Link href="/">
-            <Button variant="outline"><Home className="h-4 w-4 mr-2" /> Inicio</Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-[10px] font-bold"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+          >
+            <LogOut className="h-3 w-3 mr-1" />
+            {logoutMutation.isPending ? "Cerrando sesión..." : "Cerrar sesión"}
+          </Button>
         </div>
 
         <Card>
@@ -149,11 +155,22 @@ export default function AdminPanel() {
               </Select>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => blockMachine.mutate(!machineBlocked)}>
-                {machineBlocked ? "Desbloquear máquina" : "Bloquear máquina"}
+              <Button
+                onClick={() => blockMachine.mutate(!machineBlocked)}
+                disabled={blockMachine.isPending}
+              >
+                {blockMachine.isPending
+                  ? "Guardando..."
+                  : machineBlocked ? "Desbloquear máquina" : "Bloquear máquina"}
               </Button>
-              <Button variant="secondary" onClick={() => blockSlot.mutate(!slotBlocked)}>
-                {slotBlocked ? `Desbloquear franja ${service}` : `Bloquear franja ${service}`}
+              <Button
+                variant="secondary"
+                onClick={() => blockSlot.mutate(!slotBlocked)}
+                disabled={blockSlot.isPending}
+              >
+                {blockSlot.isPending
+                  ? "Guardando..."
+                  : slotBlocked ? `Desbloquear franja ${service}` : `Bloquear franja ${service}`}
               </Button>
             </div>
           </CardContent>
@@ -200,9 +217,10 @@ export default function AdminPanel() {
                           <div className="flex gap-2">
                             <Button
                               size="sm"
+                              disabled={updateUser.isPending}
                               onClick={() => updateUser.mutate({ userId: u.id, name: edited.name, allergies: edited.allergies })}
                             >
-                              Guardar
+                              {updateUser.isPending ? "Guardando..." : "Guardar"}
                             </Button>
                             <Button
                               size="sm"
@@ -214,7 +232,7 @@ export default function AdminPanel() {
                                 }
                               }}
                             >
-                              Borrar
+                              {deleteUser.isPending ? "Borrando..." : "Borrar"}
                             </Button>
                           </div>
                         </td>

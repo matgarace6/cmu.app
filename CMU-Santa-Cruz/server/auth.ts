@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
+import { toUserWithAdminFlag } from "./admin";
 
 const scryptAsync = promisify(scrypt);
 
@@ -51,7 +52,7 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy({ usernameField: 'roomNumber' }, async (roomNumber, password, done) => {
       try {
-        const user = await storage.getUserByUsername(roomNumber);
+        const user = await storage.getUserByRoomNumber(roomNumber);
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         }
@@ -84,7 +85,7 @@ export function setupAuth(app: Express) {
       }
 
       console.log("--- PASO 4: Buscando si la habitación existe...");
-      const existingUser = await storage.getUserByUsername(result.data.roomNumber);
+      const existingUser = await storage.getUserByRoomNumber(result.data.roomNumber);
 
       if (existingUser) {
         console.log("--- PASO 5: La habitación ya estaba registrada");
@@ -106,7 +107,7 @@ export function setupAuth(app: Express) {
            console.error("--- ERROR EN PASO 8:", err);
            return res.status(500).send("Error al iniciar sesión");
         }
-        res.status(201).json(user);
+        res.status(201).json(toUserWithAdminFlag(user));
       });
     } catch (e: any) {
       console.error("--- ¡BOOM! ERROR CRÍTICO DETECTADO ---");
@@ -122,7 +123,7 @@ export function setupAuth(app: Express) {
       if (!user) return res.status(401).send("Número de habitación o contraseña incorrectos");
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(200).json(user);
+        res.status(200).json(toUserWithAdminFlag(user));
       });
     })(req, res, next);
   });
@@ -136,6 +137,6 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    res.json(toUserWithAdminFlag(req.user));
   });
 }

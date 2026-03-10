@@ -27,7 +27,7 @@ export default function HomePage() {
   const nextWeekLimit = addDays(today, 7);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
 
-  if (user?.roomNumber === "422") {
+  if (user?.isAdmin) {
     return <Redirect to="/admin" />;
   }
 
